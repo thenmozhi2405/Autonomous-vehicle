@@ -1,0 +1,52 @@
+#include <esp_now.h>
+#include <WiFi.h>
+
+// Replace with receiver's MAC Address
+uint8_t receiverMAC[] = {0x10, 0x06, 0x1C, 0x41, 0xDD, 0xA8};
+
+// Structure to send data
+typedef struct struct_message {
+    int id;
+    char message[32];
+} struct_message;
+
+struct_message outgoingData = {1, "Hello ESP32 Receiver!"};
+
+// Callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+    Serial.print("Message Send Status: ");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+}
+
+void setup() {
+    Serial.begin(115200);
+    Serial.println("ESP32 Sender is starting...");
+    WiFi.mode(WIFI_STA);
+    
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+        return;
+    }
+    
+    esp_now_register_send_cb(OnDataSent);
+    
+    esp_now_peer_info_t peerInfo;
+    memcpy(peerInfo.peer_addr, receiverMAC, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+    
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("Failed to add peer");
+        return;
+    }
+}
+
+void loop() {
+    esp_err_t result = esp_now_send(receiverMAC, (uint8_t *)&outgoingData, sizeof(outgoingData));
+    if (result == ESP_OK) {
+        Serial.println("Sent message successfully");
+    } else {
+        Serial.println("Error sending message");
+    }
+    delay(2000); // Send message every 2 seconds
+}

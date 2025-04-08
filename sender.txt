@@ -1,0 +1,37 @@
+#include <WiFi.h>
+#include <esp_now.h>
+
+// Define structure matching the sender
+typedef struct struct_message {
+    int id;
+    char message[32];
+} struct_message;
+
+struct_message incomingData;
+
+// Corrected function signature
+void OnDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
+    memcpy(&incomingData, data, sizeof(incomingData));
+
+    Serial.print("Received ID: ");
+    Serial.println(incomingData.id);
+    Serial.print("Message: ");
+    Serial.println(incomingData.message);
+}
+
+void setup() {
+    Serial.begin(115200);
+    
+    WiFi.mode(WIFI_STA);
+    
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW init failed!");
+        return;
+    }
+
+    esp_now_register_recv_cb(OnDataRecv);
+}
+
+void loop() {
+    // Nothing to do here, data is received in the callback
+}
